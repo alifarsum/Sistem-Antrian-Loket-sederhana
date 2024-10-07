@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Antrian Loket</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .queue-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .active {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Sistem Antrian Loket</h1>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h2 id="antrian" class="text-center">A001</h2>
+                        <button id="panggilBtn" class="btn btn-primary btn-block mb-3">Panggil Antrian</button>
+                        <button id="nextBtn" class="btn btn-success btn-block mb-3">Antrian Berikutnya</button>
+                        <button id="prevBtn" class="btn btn-warning btn-block mb-3">Antrian Sebelumnya</button>
+                        <div class="input-group mt-3">
+                            <input type="text" id="nomorAntrian" class="form-control" placeholder="Masukkan Nomor Antrian">
+                            <button id="tambahAntrianBtn" class="btn btn-secondary">Tambah Antrian</button>
+                        </div>
+                        <div class="input-group mt-3">
+                            <input type="text" id="awalAntrian" class="form-control" placeholder="Awal Nomor Antrian">
+                            <input type="text" id="akhirAntrian" class="form-control" placeholder="Akhir Nomor Antrian">
+                            <button id="tambahRangeBtn" class="btn btn-secondary">Tambah Range Antrian</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-body queue-list">
+                        <ul id="daftarAntrian" class="list-group">
+                            <!-- Daftar antrian akan diisi di sini -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let antrianSekarang = null;
+            let daftarAntrian = [];
+            let riwayatAntrian = [];
+
+            const panggilBtn = document.getElementById('panggilBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const tambahAntrianBtn = document.getElementById('tambahAntrianBtn');
+            const tambahRangeBtn = document.getElementById('tambahRangeBtn');
+            const antrianElem = document.getElementById('antrian');
+            const nomorAntrianInput = document.getElementById('nomorAntrian');
+            const awalAntrianInput = document.getElementById('awalAntrian');
+            const akhirAntrianInput = document.getElementById('akhirAntrian');
+            const daftarAntrianElem = document.getElementById('daftarAntrian');
+
+            function updateAntrianDisplay() {
+                if (antrianSekarang !== null) {
+                    antrianElem.textContent = `A${String(antrianSekarang).padStart(3, '0')}`;
+                } else {
+                    antrianElem.textContent = '-';
+                }
+            }
+
+            function speakText(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.8;
+                speechSynthesis.speak(utterance);
+            }
+
+            function updateDaftarAntrian() {
+                daftarAntrianElem.innerHTML = '';
+                
+                // Tampilkan nomor antrian yang sedang dipanggil dengan gaya khusus
+                if (antrianSekarang !== null) {
+                    const liCurrent = document.createElement('li');
+                    liCurrent.textContent = `A${String(antrianSekarang).padStart(3, '0')}`;
+                    liCurrent.className = 'list-group-item active bg-primary';
+                    daftarAntrianElem.appendChild(liCurrent);
+                }
+
+                // Tampilkan sisa daftar antrian
+                daftarAntrian.forEach(nomor => {
+                    if (nomor !== antrianSekarang) {
+                        const li = document.createElement('li');
+                        li.textContent = `A${String(nomor).padStart(3, '0')}`;
+                        li.className = 'list-group-item';
+                        daftarAntrianElem.appendChild(li);
+                    }
+                });
+            }
+
+            function panggilAntrian() {
+                if (antrianSekarang !== null) {
+                    speakText(`Nomor antrian... A${String(antrianSekarang).padStart(3, '0')}, silahkan ke loket`);
+                    updateDaftarAntrian();
+                } else {
+                    alert('Belum ada nomor antrian yang dipanggil.');
+                }
+            }
+
+            function antrianBerikutnya() {
+                if (daftarAntrian.length > 0) {
+                    riwayatAntrian.push(antrianSekarang); // Simpan antrian saat ini ke riwayat
+                    antrianSekarang = daftarAntrian.shift(); // Ambil dan hapus antrian berikutnya dari daftar
+                    updateAntrianDisplay();
+                    speakText(`Nomor antrian... A${String(antrianSekarang).padStart(3, '0')}, silahkan ke loket`);
+                    updateDaftarAntrian();
+                } else {
+                    alert('Tidak ada antrian berikutnya.');
+                }
+            }
+
+            function antrianSebelumnya() {
+                if (riwayatAntrian.length > 0) {
+                    const previousAntrian = riwayatAntrian.pop(); // Ambil antrian terakhir dari riwayat
+                    daftarAntrian.unshift(antrianSekarang); // Kembalikan antrian saat ini ke daftar antrian
+                    antrianSekarang = previousAntrian; // Ganti antrian saat ini dengan antrian sebelumnya
+                    updateAntrianDisplay();
+                    speakText(`Nomor antrian... A${String(antrianSekarang).padStart(3, '0')}, silahkan ke loket`);
+                    updateDaftarAntrian();
+                } else {
+                    alert('Tidak ada antrian sebelumnya.');
+                }
+            }
+
+            function tambahAntrian() {
+                const nomorAntrian = parseInt(nomorAntrianInput.value.trim());
+                if (!isNaN(nomorAntrian) && !daftarAntrian.includes(nomorAntrian)) {
+                    daftarAntrian.push(nomorAntrian);
+                    updateDaftarAntrian();
+                    nomorAntrianInput.value = '';
+                } else {
+                    alert('Masukkan nomor antrian yang valid atau nomor antrian sudah ada.');
+                }
+            }
+
+            function tambahRangeAntrian() {
+                const awal = parseInt(awalAntrianInput.value);
+                const akhir = parseInt(akhirAntrianInput.value);
+                if (!isNaN(awal) && !isNaN(akhir) && awal <= akhir) {
+                    for (let i = awal; i <= akhir; i++) {
+                        if (!daftarAntrian.includes(i)) {
+                            daftarAntrian.push(i);
+                        }
+                    }
+                    updateDaftarAntrian();
+                    awalAntrianInput.value = '';
+                    akhirAntrianInput.value = '';
+                } else {
+                    alert('Masukkan rentang antrian yang valid.');
+                }
+            }
+
+            // Event listeners
+            panggilBtn.addEventListener('click', panggilAntrian);
+            nextBtn.addEventListener('click', antrianBerikutnya);
+            prevBtn.addEventListener('click', antrianSebelumnya);
+            tambahAntrianBtn.addEventListener('click', tambahAntrian);
+            tambahRangeBtn.addEventListener('click', tambahRangeAntrian);
+
+            // Inisialisasi tampilan awal
+            updateAntrianDisplay();
+            updateDaftarAntrian();
+        });
+    </script>
+</body>
+</html>
